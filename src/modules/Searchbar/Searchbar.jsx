@@ -1,58 +1,50 @@
-import { Component } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
 import { FcSearch } from "react-icons/fc";
 
+import initialState from "./initialState";
+
 import css from './Searchbar.module.css';
 
-class Searchbar extends Component {
-    state = {
-        search: "",
-    };
+const Searchbar = ({ onSubmit }) => {
+    const [state, setState] = useState({ ...initialState });
 
-    handleChange = ({ target }) => {
+    const handleChange = ({ target }) => {
         const { name, value } = target;
-        this.setState({ [name]: value });
-    };
-
-    handleSubmit = (e) => {
-        e.preventDefault();
-        const { onSubmit } = this.props;
-        onSubmit({ ...this.state });
-        this.reset();
-    };
-
-    reset() {
-        this.setState({
-            search: "",
+        setState(prevState => {
+            return { ...prevState, [name]: value };
         });
     };
 
-    render() {
-        const { search } = this.state;
-        const { handleChange, handleSubmit } = this;
-
-        return (
-            <header className={css.Searchbar}>
-                <form className={css.SearchForm} onSubmit={handleSubmit}>
-                    <button type="submit" className={css.SearchForm__button}>
-                        <FcSearch className={css.button__label} />
-                    </button>
-
-                    <input
-                        className={css.input}
-                        type="text"
-                        autoComplete="off"
-                        autoFocus
-                        name="search"
-                        placeholder="Search images and photos"
-                        value={search}
-                        onChange={handleChange}
-                        required
-                    />
-                </form>
-            </header>
-        )
+    const handleSubmit = e => {
+        e.preventDefault();
+        onSubmit(({ ...state }));
+        setState({ ...initialState });
     };
+
+    const { search } = state;
+
+    return (
+        <header className={css.Searchbar}>
+            <form className={css.SearchForm} onSubmit={handleSubmit}>
+                <button type="submit" className={css.SearchForm__button}>
+                    <FcSearch className={css.button__label} />
+                </button>
+
+                <input
+                    className={css.input}
+                    type="text"
+                    autoComplete="off"
+                    autoFocus
+                    name="search"
+                    placeholder="Search images and photos"
+                    value={search}
+                    onChange={handleChange}
+                    required
+                />
+            </form>
+        </header>
+    )
 };
 
 export default Searchbar;

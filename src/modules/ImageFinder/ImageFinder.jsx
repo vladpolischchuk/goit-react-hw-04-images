@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 
 import Searchbar from "../Searchbar/Searchbar";
 import ImageGallery from "../ImageGallery/ImageGallery";
@@ -11,88 +11,66 @@ import { searchImages } from "../../shared/services/imagesAPI.js";
 
 import css from './ImageFinder.module.css';
 
-class ImageFinder extends Component {
-    state = {
-        search: "",
-        images: [],
-        loading: false,
-        error: null,
-        page: 1,
-        showModal: false,
-        modalImage: null,
-    };
+const ImageFinder = () => {
+    const [search, setSearch] = useState("");
+    const [images, setImages] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const [showModal, setShowModal] = useState(false);
+    const [modalImage, setModalImage] = useState(null);
 
-    componentDidUpdate(prevProps, prevState) {
-        const { search, page } = this.state;
-
-        if (prevState.search !== search || prevState.page !== page) {
-            this.fetchImages();
+    useEffect(() => {
+        if (search) {
+            const fetchImages = async () => {
+                try {
+                    setLoading(true);
+                    const data = await searchImages(search, page);
+                    setImages(prevImages => ([...prevImages, ...data.hits]));
+                }
+                catch (error) {
+                    setError(error.message);
+                }
+                finally {
+                    setLoading(false);
+                }
+            };
+            fetchImages();
         };
+    }, [search, page, setLoading, setImages, setError]);
+
+    const onSearchImages = ({ search }) => {
+        setSearch(search);
+        searchImages([]);
+        setPage(1);
     };
 
-    async fetchImages() {
-        try {
-            this.setState({ loading: true });
-            const { search, page } = this.state;
-            const data = await searchImages(search, page);
-
-            console.log(data.hits)
-            this.setState(({ images }) => ({
-                images: [...images, ...data.hits]
-            }));
-        }
-        catch (error) {
-            this.setState({ error: error.message });
-        }
-        finally {
-            this.setState({ loading: false });
-        }
+    const showImage = (data) => {
+        setModalImage(data);
+        setShowModal(true);
     };
 
-    searchImages = ({ search }) => {
-        this.setState({ search, images: [], page: 1 });
+    const loadMore = () => {
+        setPage(prevPage => prevPage + 1);
     };
 
-    loadMore = () => {
-        this.setState(({ page }) => ({ page: page + 1 }));
+    const closeImage = () => {
+        setShowModal(false);
+        setModalImage(null);
     };
 
-    showImage = ({ largeImageURL, tags }) => {
-        this.setState({
-            modalImage: {
-                largeImageURL,
-                tags,
-            },
-            showModal: true,
-        });
-    };
-
-    closeImage = () => {
-        this.setState({
-            showModal: false,
-            modalImage: null,
-        });
-    };
-
-    render() {
-        const { images, loading, error, showModal, modalImage } = this.state;
-        const { searchImages, loadMore, showImage, closeImage } = this;
-
-        return (
-            <>
-                <Searchbar onSubmit={searchImages} />
-                {error && <p className={css.error}>Something goes wrong. Please try again later.</p>}
-                {loading && <Loader />}
-                <ImageGallery images={images} showImage={showImage} />
-                {Boolean(images.length) && <ButtonLoadMore loadMore={loadMore} />}
-                {showModal && <Modal closeImage={closeImage}>
-                    <LargeImage {...modalImage} />
-                </Modal>}
-            </>
-
-        )
-    };
-
+    return (
+        <>
+            <Searchbar onSubmit={onSearchImages} />
+            {error && <p className={css.error}>Something goes wrong. Please try again later.</p>}
+            {loading && <Loader />}
+            <ImageGallery images={images} showImage={showImage} />
+            {Boolean(images.length) && <ButtonLoadMore loadMore={loadMore} />}
+            {showModal && <Modal closeImage={closeImage}>
+                <LargeImage {...modalImage} />
+            </Modal>}
+        </>
+    );
 };
 
 export default ImageFinder;
